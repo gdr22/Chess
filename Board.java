@@ -5,6 +5,7 @@ import java.io.*;
 
 public class Board {
    final int[] pieceRanks = {1, 5, 3, 3, 9, 11}; //Point Values for pieces
+   final int[] centerWeight = {5, 6, 7, 8, 8, 7, 6, 5}; //Multipliers for piece position weighting
 
    Piece[][] board = new Piece[8][8];
    
@@ -115,7 +116,17 @@ public class Board {
       for(int y = 0; y < 8; y++) {
          for(int x = 0; x < 8; x++) {
             if(board[x][y].type != 0) {
-               score += pieceRanks[board[x][y].type - 1] * (board[x][y].color ? 1 : -1);
+               //score += pieceRanks[board[x][y].type - 1] * (board[x][y].color ? 1 : -1);
+               int centerMultiplier = centerWeight[x] * centerWeight[y];
+               
+               //New heuristic now values pieces toward the center
+               if(board[x][y].type != 6) {
+                  score += pieceRanks[board[x][y].type - 1] * (board[x][y].color ? 1 : -1) * centerMultiplier;
+               }
+               else
+               {
+                  score += pieceRanks[board[x][y].type - 1] * (board[x][y].color ? 1 : -1);
+               }
             }
          }
       }

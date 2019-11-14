@@ -1,9 +1,10 @@
 import java.util.Scanner;
 import java.util.List;
 import java.util.ArrayList;
+import java.lang.Math;
 import java.io.*;
 
-public class Chess {
+public class MiniMaxChess {
    public static final int aiLevel = 4;
    public static GUI window;
 
@@ -135,6 +136,9 @@ public class Chess {
       List<Move> moves = aiBoard.possibleMoves(stepTurn);
       window.updateMoves(Move.toStringArray(moves));
       
+      double alpha = -1000000000;
+      double beta = 1000000000;
+      
       Move move = new Move(0, 0, 0, 0);
       double score = 0;
       double highScore = 0; //This initializtion doesn't matter since it gets initialized to the first move when in the loop
@@ -144,7 +148,16 @@ public class Chess {
          Board nextBoard = aiBoard.copy();
          nextBoard.makeMove(moves.get(i));
 
-         score = aiSearch(nextBoard, recursion - 1, !stepTurn);
+         score = aiSearch(nextBoard, recursion - 1, !stepTurn, alpha, beta);
+         
+         if(stepTurn) {
+            alpha = Math.max(alpha, score); //If we have a better possible score, increase our alpha
+         }
+         else
+         {
+            beta = Math.min(beta, score); //If we are minimizing, lower beta when we find a lower score
+         }
+         
          
          if(score == (stepTurn ? -1000000000 : 1000000000)) { //Is this a check move?
             moves.remove(i--); //Remove this option from the list and set back the counter
@@ -175,12 +188,16 @@ public class Chess {
    }
    
    /* Method used to rank each move. Called upon by the ai method */
-   public static double aiSearch(Board aiBoard, int recursion, boolean stepTurn) {
+   public static double aiSearch(Board aiBoard, int recursion, boolean stepTurn, double alpha, double beta) {
       List<Move> moves = aiBoard.possibleMoves(stepTurn);
       boolean realTurn = ((recursion % 2) == 0) ? stepTurn : !stepTurn; //Whose turn is it currently in the game?
       
       double total = 0;
+      double minmax = stepTurn ? -1000000000 : 1000000000;
       double score;
+      
+      double localAlpha = alpha;
+      double localBeta = beta;
       
       for(int i = 0; i < moves.size(); i++) { //Search for check moves first to quit while you're ahead
          if(aiBoard.board[moves.get(i).bx][moves.get(i).by].type == 6) { //Attacking a king?
@@ -195,21 +212,49 @@ public class Chess {
          nextBoard.makeMove(moves.get(i));
          
          if(recursion != 0) { //Go deeper if recursion level isn't zero
-            score = aiSearch(nextBoard, recursion - 1, !stepTurn);
+            score = aiSearch(nextBoard, recursion - 1, !stepTurn, alpha, beta);
             
             if(score == (realTurn ? -1000000000 : 1000000000)) { //Is this a check move?
                moves.remove(i--); //Remove this option from the list and set back the counter
                continue; //Go to the next move
             }
             else { //Move isn't check
-               total += score;
+               //Decide whether we do min or max
+               if(stepTurn) {
+                  minmax = Math.max(minmax, score);
+               }
+               else
+               {
+                  minmax = Math.min(minmax, score);
+               }
             }
          }
          else {
-            total += nextBoard.score();
+            //Decide whether we do min or max
+            if(stepTurn) {
+               minmax = Math.max(minmax, nextBoard.score());
+            }
+            else
+            {
+               minmax = Math.min(minmax, nextBoard.score());
+            }
+         }
+         
+         if(stepTurn) { //If we're maximizing (above call minimizing)
+            localAlpha = Math.max(localAlpha, minmax); //If we find something better than we already have, bump up our alpha
+            if(localBeta < localAlpha) { //If the beta passes the alpha, we just escape
+               return minmax;
+            }
+         }
+         else //If we're minimizing (above call maximizing)
+         {
+            localBeta = Math.min(localBeta, minmax); //If we find something lower than we already have, update beta
+            if(localBeta < localAlpha) { //If alpha and beta switch sides of the inequality, escape
+               return minmax;
+            }
          }
       }
-      return 10 * total / moves.size(); //Scale score to amount of moves scanned
+      return minmax;
    }
    
    /** Input the user's move */

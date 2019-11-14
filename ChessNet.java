@@ -9,7 +9,7 @@ public class ChessNet {
    public static Net net;
    public static Scanner keyboard;
    
-   public static String hostName = "192.168.1.63";
+   public static String hostName = "128.237.167.228";
    public static int portNumber = 4444;
    
    public static boolean isClient = true;
@@ -315,7 +315,7 @@ public class ChessNet {
             }
          }
          else {
-            total = nextBoard.score();
+            total += nextBoard.score();
          }
       }
       return 10 * total / moves.size(); //Scale score to amount of moves scanned
